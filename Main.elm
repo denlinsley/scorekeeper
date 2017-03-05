@@ -100,7 +100,7 @@ playerList : List Player -> Html Msg
 playerList players =
     div
         []
-        [ List.map player players ]
+        (List.map player players)
 
 
 player : Player -> Html Msg
@@ -136,10 +136,14 @@ playerForm model =
             ]
             []
         , button
-            [ onClick Save ]
+            [ class "pure-button pure-button-primary"
+            , onClick Save
+            ]
             [ text "Save" ]
         , button
-            [ onClick Cancel ]
+            [ class "pure-button"
+            , onClick Cancel
+            ]
             [ text "Cancel" ]
         ]
 
