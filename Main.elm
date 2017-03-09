@@ -2,12 +2,13 @@ module Main exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onClick, onInput, onSubmit)
 
 
--- MODEL
-
-
+{-| MODEL
+`playerName` holds the value of the input
+`playerId` holds the id of the player to edit (absence of value mesans we are adding a player)
+-}
 type alias Model =
     { players : List Player
     , playerName : String
@@ -33,10 +34,10 @@ type alias Play =
 
 initModel : Model
 initModel =
-    { players = players
+    { players = mockPlayers
     , playerName = ""
     , playerId = Nothing
-    , plays = []
+    , plays = mockPlays
     }
 
 
@@ -45,17 +46,73 @@ initModel =
 
 
 type Msg
-    = Edit
-    | Score Int
-    | Input
+    = Edit Player
+    | Score Player Int
+    | Input String
     | Save
     | Cancel
-    | DeletePlay Int
+    | DeletePlay Play
 
 
 update : Msg -> Model -> Model
 update msg model =
-    model
+    case msg of
+        Input value ->
+            { model | playerName = value }
+
+        Cancel ->
+            { model | playerName = "", playerId = Nothing }
+
+        Save ->
+            if (String.isEmpty model.playerName) then
+                model
+            else
+                save model
+
+        _ ->
+            model
+
+
+save : Model -> Model
+save model =
+    case model.playerId of
+        Just id ->
+            edit model id
+
+        Nothing ->
+            add model
+
+
+edit : Model -> Int -> Model
+edit model id =
+    let
+        newPlayers =
+            List.map
+                (\player ->
+                    if player.id == id then
+                        { player | name = model.playerName }
+                    else
+                        player
+                )
+                model.players
+    in
+        { model
+            | players = newPlayers
+            , playerName = ""
+            , playerId = Nothing
+        }
+
+
+add : Model -> Model
+add model =
+    let
+        player =
+            Player (List.length model.players + 1) model.playerName 0
+
+        newPlayers =
+            player :: model.players
+    in
+        { model | players = newPlayers, playerName = "" }
 
 
 
@@ -64,84 +121,76 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ h1
-            []
-            [ text "Score Keeper" ]
+    div [ class "scoreboard" ]
+        [ h1 [] [ text "Score Keeper" ]
         , playerSection model.players
         , playerForm model
         , playSection model.plays
+        , p [] [ text (toString model) ]
         ]
 
 
 playerSection : List Player -> Html Msg
 playerSection players =
-    div
-        []
+    div []
         [ playerListHeader
         , playerList players
+        , pointTotal
         ]
 
 
 playerListHeader : Html msg
 playerListHeader =
-    div
-        []
-        [ span
-            []
+    div []
+        [ span []
             [ text "Name" ]
-        , span
-            [ style [ ( "float", "right" ) ] ]
+        , span [ style [ ( "float", "right" ) ] ]
             [ text "Score" ]
         ]
 
 
 playerList : List Player -> Html Msg
 playerList players =
-    div
-        []
+    div []
         (List.map player players)
 
 
 player : Player -> Html Msg
 player player =
-    div
-        []
-        [ button
-            [ onClick Edit ]
+    div []
+        [ button [ onClick (Edit player) ]
             [ text "Edit" ]
-        , span
-            []
+        , span []
             [ text player.name ]
-        , button
-            [ onClick (Score 2) ]
+        , button [ onClick (Score player 2) ]
             [ text "2pt" ]
-        , button
-            [ onClick (Score 3) ]
+        , button [ onClick (Score player 3) ]
             [ text "3pt" ]
-        , span
-            []
+        , span []
             [ text (toString player.points) ]
         ]
 
 
+pointTotal : Html msg
+pointTotal =
+    div []
+        [ text "Total: " ]
+
+
 playerForm : Model -> Html Msg
 playerForm model =
-    div
-        []
+    Html.form [ onSubmit Save ]
         [ input
-            [ placeholder "Add/Edit Player"
+            [ type_ "text"
+            , placeholder "Add/Edit Player..."
             , value model.playerName
-            , onClick Input
+            , onInput Input
             ]
             []
-        , button
-            [ class "pure-button pure-button-primary"
-            , onClick Save
-            ]
+        , button [ type_ "submit" ]
             [ text "Save" ]
         , button
-            [ class "pure-button"
+            [ type_ "button"
             , onClick Cancel
             ]
             [ text "Cancel" ]
@@ -150,9 +199,27 @@ playerForm model =
 
 playSection : List Play -> Html Msg
 playSection plays =
-    div
-        []
-        [ text "playSection" ]
+    div []
+        [ playerListHeader
+        , playList plays
+        ]
+
+
+playList : List Play -> Html Msg
+playList plays =
+    div [] (List.map play plays)
+
+
+play : Play -> Html Msg
+play play =
+    div []
+        [ button [ onClick (DeletePlay play) ]
+            [ text "X" ]
+        , span []
+            [ text play.name ]
+        , span []
+            [ text (toString play.points) ]
+        ]
 
 
 
@@ -168,9 +235,21 @@ main =
         }
 
 
-players : List Player
-players =
+
+-- MOCK DATA
+
+
+mockPlayers : List Player
+mockPlayers =
     [ Player 1 "Suzie Greenberg" 10
     , Player 2 "Pete Carini" 20
     , Player 3 " Harry Hood" 30
+    ]
+
+
+mockPlays : List Play
+mockPlays =
+    [ Play 1 1 "Suzie Greenberg" 2
+    , Play 2 1 "Pete Carini" 3
+    , Play 3 1 " Harry Hood" 2
     ]
