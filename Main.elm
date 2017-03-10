@@ -34,10 +34,10 @@ type alias Play =
 
 initModel : Model
 initModel =
-    { players = mockPlayers
+    { players = []
     , playerName = ""
     , playerId = Nothing
-    , plays = mockPlays
+    , plays = []
     }
 
 
@@ -68,6 +68,12 @@ update msg model =
                 model
             else
                 save model
+
+        Edit player ->
+            { model | playerName = player.name, playerId = Just player.id }
+
+        Score player points ->
+            addPlay model player points
 
         _ ->
             model
@@ -115,6 +121,18 @@ add model =
         { model | players = newPlayers, playerName = "" }
 
 
+addPlay : Model -> Player -> Int -> Model
+addPlay model player points =
+    let
+        play =
+            Play (List.length model.plays + 1) player.id player.name points
+
+        newPlays =
+            play :: model.plays
+    in
+        { model | plays = newPlays }
+
+
 
 -- VIEW
 
@@ -141,40 +159,47 @@ playerSection players =
 
 playerListHeader : Html msg
 playerListHeader =
-    div []
-        [ span []
-            [ text "Name" ]
-        , span [ style [ ( "float", "right" ) ] ]
-            [ text "Score" ]
+    header []
+        [ div [] [ text "Name" ]
+        , div [] [ text "Points" ]
         ]
 
 
 playerList : List Player -> Html Msg
 playerList players =
-    div []
+    ul []
         (List.map player players)
 
 
 player : Player -> Html Msg
 player player =
-    div []
-        [ button [ onClick (Edit player) ]
-            [ text "Edit" ]
-        , span []
+    li []
+        [ i
+            [ class "edit"
+            , onClick (Edit player)
+            ]
+            []
+        , div []
             [ text player.name ]
-        , button [ onClick (Score player 2) ]
+        , button
+            [ type_ "button"
+            , onClick (Score player 2)
+            ]
             [ text "2pt" ]
-        , button [ onClick (Score player 3) ]
+        , button
+            [ type_ "button"
+            , onClick (Score player 3)
+            ]
             [ text "3pt" ]
-        , span []
+        , div []
             [ text (toString player.points) ]
         ]
 
 
 pointTotal : Html msg
 pointTotal =
-    div []
-        [ text "Total: " ]
+    footer []
+        [ div [] [ text "Total:" ] ]
 
 
 playerForm : Model -> Html Msg
@@ -207,18 +232,20 @@ playSection plays =
 
 playList : List Play -> Html Msg
 playList plays =
-    div [] (List.map play plays)
+    ul []
+        (List.map play plays)
 
 
 play : Play -> Html Msg
 play play =
-    div []
-        [ button [ onClick (DeletePlay play) ]
-            [ text "X" ]
-        , span []
-            [ text play.name ]
-        , span []
-            [ text (toString play.points) ]
+    li []
+        [ i
+            [ class "remove"
+            , onClick (DeletePlay play)
+            ]
+            []
+        , div [] [ text play.name ]
+        , div [] [ text (toString play.points) ]
         ]
 
 
